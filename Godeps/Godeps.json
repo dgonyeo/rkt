@@ -1,22 +1,12 @@
 {
 	"ImportPath": "github.com/coreos/rkt",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.1",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/appc/cni/pkg/invoke",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
 			"ImportPath": "github.com/appc/cni/pkg/ip",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
-			"ImportPath": "github.com/appc/cni/pkg/ipam",
 			"Comment": "v0.1.0-35-g5b7aa09",
 			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
 		},
@@ -26,47 +16,7 @@
 			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
 		},
 		{
-			"ImportPath": "github.com/appc/cni/pkg/skel",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
 			"ImportPath": "github.com/appc/cni/pkg/types",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
-			"ImportPath": "github.com/appc/cni/plugins/ipam/dhcp",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
-			"ImportPath": "github.com/appc/cni/plugins/ipam/host-local",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
-			"ImportPath": "github.com/appc/cni/plugins/main/bridge",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
-			"ImportPath": "github.com/appc/cni/plugins/main/ipvlan",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
-			"ImportPath": "github.com/appc/cni/plugins/main/macvlan",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
-			"ImportPath": "github.com/appc/cni/plugins/main/ptp",
-			"Comment": "v0.1.0-35-g5b7aa09",
-			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
-		},
-		{
-			"ImportPath": "github.com/appc/cni/plugins/meta/flannel",
 			"Comment": "v0.1.0-35-g5b7aa09",
 			"Rev": "5b7aa09e52da1c490ace2ec2c940fe5ef1575d27"
 		},
@@ -83,17 +33,7 @@
 			"Rev": "f8124610a7fb34aa80e8cdf02361180b524193d6"
 		},
 		{
-			"ImportPath": "github.com/appc/spec/ace",
-			"Comment": "v0.7.1",
-			"Rev": "818ac4d0073424f4e0a46f45abaa147ccc1b5a24"
-		},
-		{
 			"ImportPath": "github.com/appc/spec/aci",
-			"Comment": "v0.7.1",
-			"Rev": "818ac4d0073424f4e0a46f45abaa147ccc1b5a24"
-		},
-		{
-			"ImportPath": "github.com/appc/spec/actool",
 			"Comment": "v0.7.1",
 			"Rev": "818ac4d0073424f4e0a46f45abaa147ccc1b5a24"
 		},
@@ -137,11 +77,6 @@
 		{
 			"ImportPath": "github.com/coreos/go-semver/semver",
 			"Rev": "6fe83ccda8fb9b7549c9ab4ba47f47858bc950aa"
-		},
-		{
-			"ImportPath": "github.com/coreos/go-systemd/activation",
-			"Comment": "v2-55-gd7b0894",
-			"Rev": "d7b08942d0d85bfcb4694864881c4af7324784d2"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-systemd/dbus",
@@ -197,14 +132,6 @@
 		{
 			"ImportPath": "github.com/cznic/zappy",
 			"Rev": "47331054e4f96186e3ff772877c0443909368a45"
-		},
-		{
-			"ImportPath": "github.com/d2g/dhcp4",
-			"Rev": "f0e4d29ff0231dce36e250b2ed9ff08412584bca"
-		},
-		{
-			"ImportPath": "github.com/d2g/dhcp4client",
-			"Rev": "bed07e1bc5b85f69c6f0fd73393aa35ec68ed892"
 		},
 		{
 			"ImportPath": "github.com/dustin/go-humanize",
@@ -303,10 +230,6 @@
 		{
 			"ImportPath": "golang.org/x/net/trace",
 			"Rev": "c2528b2dd8352441850638a8bb678c2ad056fd3e"
-		},
-		{
-			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "e11762ca30adc5b39fdbfd8c4250dabeb8e456d3"
 		},
 		{
 			"ImportPath": "golang.org/x/tools/go/vcs",

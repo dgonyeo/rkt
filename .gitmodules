@@ -1,0 +1,6 @@
+[submodule "submodules/spec"]
+	path = submodules/spec
+	url = https://github.com/appc/spec
+[submodule "submodules/cni"]
+	path = submodules/cni
+	url = https://github.com/appc/cni
