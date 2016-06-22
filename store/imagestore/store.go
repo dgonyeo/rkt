@@ -329,6 +329,20 @@ func (s *Store) TmpDir() (string, error) {
 	return dir, nil
 }
 
+// TmpNamedDir creates and returns a dir with the speciffied name local to the
+// same filesystem as the Store, or any error encountered.
+func (s Store) TmpNamedDir(name string) (string, error) {
+	parentDir, err := s.TmpDir()
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Join(parentDir, name)
+	if err := os.MkdirAll(dir, defaultPathPerm); err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
 // ResolveKey resolves a partial key (of format `sha512-0c45e8c0ab2`) to a full
 // key by considering the key a prefix and using the store for resolution.
 // If the key is longer than the full key length, it is first truncated.

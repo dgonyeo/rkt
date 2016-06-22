@@ -17,17 +17,12 @@ package image
 import (
 	"crypto/sha512"
 	"errors"
-	"fmt"
 	"io"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/coreos/rkt/pkg/lock"
 	"github.com/coreos/rkt/store/imagestore"
 	"github.com/hashicorp/errwrap"
-
-	"github.com/coreos/ioprogress"
 )
 
 // writeSyncer is an interface that wraps io.Writer and a Sync method.
@@ -41,37 +36,6 @@ type writeSyncer interface {
 type readSeekCloser interface {
 	io.ReadSeeker
 	io.Closer
-}
-
-// getIoProgressReader returns a reader that wraps the HTTP response
-// body, so it prints a pretty progress bar when reading data from it.
-func getIoProgressReader(label string, res *http.Response) io.Reader {
-	prefix := "Downloading " + label
-	fmtBytesSize := 18
-	barSize := int64(80 - len(prefix) - fmtBytesSize)
-	bar := ioprogress.DrawTextFormatBarForW(barSize, os.Stderr)
-	fmtfunc := func(progress, total int64) string {
-		// Content-Length is set to -1 when unknown.
-		if total == -1 {
-			return fmt.Sprintf(
-				"%s: %v of an unknown total size",
-				prefix,
-				ioprogress.ByteUnitStr(progress),
-			)
-		}
-		return fmt.Sprintf(
-			"%s: %s %s",
-			prefix,
-			bar(progress, total),
-			ioprogress.DrawTextFormatBytes(progress, total),
-		)
-	}
-	return &ioprogress.Reader{
-		Reader:       res.Body,
-		Size:         res.ContentLength,
-		DrawFunc:     ioprogress.DrawTerminalf(os.Stderr, fmtfunc),
-		DrawInterval: time.Second,
-	}
 }
 
 // removeOnClose is a wrapper around os.File that removes the file

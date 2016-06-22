@@ -592,7 +592,7 @@ func (s *stubStage1Setup) generateConfigContents(subdir, tmpl string, replacemen
 }
 
 func (s *stubStage1Setup) check(flag, expectedLine string) {
-	cmd := fmt.Sprintf("%s --insecure-options=image,tls --debug run %s %s", s.ctx.Cmd(), flag, getInspectImagePath())
+	cmd := fmt.Sprintf("%s --insecure-options=image,tls,http --debug run %s %s", s.ctx.Cmd(), flag, getInspectImagePath())
 	child := spawnOrFail(s.t, cmd)
 	defer waitOrFail(s.t, child, 0)
 	s.getExpectedOrFail(child, expectedLine)

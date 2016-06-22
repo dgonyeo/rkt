@@ -62,6 +62,7 @@ func expectCommon(p *gexpect.ExpectSubprocess, searchString string, timeout time
 	if err != nil {
 		return fmt.Errorf(string(p.Collect()))
 	}
+	fmt.Printf("succeeded with output:\n%s\n", string(p.Collect()))
 
 	return nil
 }

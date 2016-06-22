@@ -248,13 +248,16 @@ func TestResumedFetch(t *testing.T) {
 	shouldInterrupt := &synchronizedBool{}
 	shouldInterrupt.Write(true)
 
+	fi, _ := os.Stat(imagePath)
+	t.Logf("actual size: %d", fi.Size())
+
 	server := httptest.NewServer(testServerHandler(t, shouldInterrupt, imagePath, kill, reportkill))
 	defer server.Close()
 
 	ctx := testutils.NewRktRunCtx()
 	defer ctx.Cleanup()
 
-	cmd := fmt.Sprintf("%s --no-store --insecure-options=image fetch %s", ctx.Cmd(), server.URL)
+	cmd := fmt.Sprintf("%s --no-store --insecure-options=image,http fetch %s", ctx.Cmd(), server.URL)
 	child := spawnOrFail(t, cmd)
 	<-kill
 	err := child.Close()
@@ -270,8 +273,9 @@ func TestResumedFetch(t *testing.T) {
 	close(reportkill)
 
 	child = spawnOrFail(t, cmd)
-	if _, _, err := expectRegexWithOutput(child, ".*"+hash); err != nil {
-		t.Fatalf("hash didn't match: %v", err)
+	_, s, err := expectRegexWithOutput(child, ".*"+hash)
+	if err != nil {
+		t.Fatalf("hash didn't match: %v\nin: %s", err, s)
 	}
 	waitOrFail(t, child, 0)
 }
@@ -295,7 +299,7 @@ func TestResumedFetchInvalidCache(t *testing.T) {
 	// Fetch the first half of the image, and kill rkt once it reaches halfway.
 	server := httptest.NewServer(testServerHandler(t, shouldInterrupt, imagePath, kill, reportkill))
 	defer server.Close()
-	cmd := fmt.Sprintf("%s --no-store --insecure-options=image fetch %s", ctx.Cmd(), server.URL)
+	cmd := fmt.Sprintf("%s --no-store --insecure-options=image,http fetch %s", ctx.Cmd(), server.URL)
 	child := spawnOrFail(t, cmd)
 	<-kill
 	err := child.Close()
