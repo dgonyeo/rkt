@@ -29,7 +29,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/coreos/rkt/common/apps"
+	dist "github.com/coreos/rkt/common/distribution"
 	"github.com/coreos/rkt/pkg/aci"
 	"github.com/coreos/rkt/pkg/keystore"
 	"github.com/coreos/rkt/pkg/keystore/keystoretest"
@@ -281,7 +281,15 @@ func TestDownloading(t *testing.T) {
 			Headers:       headers,
 			InsecureFlags: insecureFlags,
 		}
-		_, err = ft.FetchImage(tt.ACIURL, "", apps.AppImageURL)
+		u, err := url.Parse(tt.ACIURL)
+		if err != nil {
+			t.Fatalf("unexpected error %v", err)
+		}
+		d, err := dist.NewACIArchiveFromTransportURL(u)
+		if err != nil {
+			t.Fatalf("unexpected error %v", err)
+		}
+		_, err = ft.FetchImage(d, tt.ACIURL, "")
 		if err != nil && !tt.authFail {
 			t.Fatalf("expected download to succeed, it failed: %v (server: %q, headers: `%v`)", err, urlToName[tt.ACIURL], tt.options)
 		}
@@ -354,7 +362,16 @@ func TestFetchImage(t *testing.T) {
 		Ks:            ks,
 		InsecureFlags: secureFlags,
 	}
-	_, err = ft.FetchImage(fmt.Sprintf("%s/app.aci", ts.URL), "", apps.AppImageURL)
+
+	u, err := url.Parse(fmt.Sprintf("%s/app.aci", ts.URL))
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	d, err := dist.NewACIArchiveFromTransportURL(u)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	_, err = ft.FetchImage(d, u.String(), "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -543,7 +560,15 @@ func TestFetchImageCache(t *testing.T) {
 			// Skip local store
 			NoStore: true,
 		}
-		_, err = ft.FetchImage(aciURL, "", apps.AppImageURL)
+		u, err := url.Parse(aciURL)
+		if err != nil {
+			t.Fatalf("unexpected error %v", err)
+		}
+		d, err := dist.NewACIArchiveFromTransportURL(u)
+		if err != nil {
+			t.Fatalf("unexpected error %v", err)
+		}
+		_, err = ft.FetchImage(d, u.String(), "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -559,7 +584,7 @@ func TestFetchImageCache(t *testing.T) {
 		}
 
 		downloadTime := rem.DownloadTime
-		_, err = ft.FetchImage(aciURL, "", apps.AppImageURL)
+		_, err = ft.FetchImage(d, u.String(), "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
