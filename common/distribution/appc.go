@@ -21,6 +21,8 @@ import (
 
 	"github.com/appc/spec/discovery"
 	"github.com/appc/spec/schema/types"
+	"github.com/coreos/rkt/rkt/config"
+	"github.com/hashicorp/errwrap"
 )
 
 const (
@@ -107,4 +109,62 @@ func (a *Appc) Compare(d Distribution) bool {
 		return false
 	}
 	return a.u.String() == a2.u.String()
+}
+
+func (a *Appc) Fetch(ft FetchTask) (string, error) {
+	app, err := AppDiscovery(a)
+	if err != nil {
+		return "", errwrap.Wrap(fmt.Errorf("invalid Appc distribution"), err)
+	}
+	name := app.Name.String()
+	fmt.Printf("searching for app image %s", name)
+	ep, err := a.discoverApp(ft, app)
+	if err != nil {
+		return "", errwrap.Wrap(fmt.Errorf("discovery failed for %q", name), err)
+	}
+	//latest := false
+	//// No specified version label, mark it as latest
+	//if _, ok := app.Labels["version"]; !ok {
+	//	latest = true
+	//}
+
+	aciUrlStr := ep[0].ACI
+	//ascUrlStr := ep[0].ASC
+
+	fmt.Printf("remote fetching from URL %q", aciUrlStr)
+
+	aciUrl, err := url.Parse(aciUrlStr)
+	if err != nil {
+		return "", err
+	}
+
+	archiveDist, err := NewACIArchiveFromTransportURL(aciUrl)
+	if err != nil {
+		return "", err
+	}
+	return archiveDist.Fetch(ft)
+}
+
+func (a *Appc) discoverApp(ft FetchTask, app *discovery.App) (discovery.ACIEndpoints, error) {
+	insecure := discovery.InsecureNone
+	if ft.InsecureFlags.SkipTLSCheck() {
+		insecure = insecure | discovery.InsecureTLS
+	}
+	if ft.InsecureFlags.AllowHTTP() {
+		insecure = insecure | discovery.InsecureHTTP
+	}
+	hostHeaders := config.ResolveAuthPerHost(ft.Headers)
+	ep, attempts, err := discovery.DiscoverACIEndpoints(*app, hostHeaders, insecure, 0)
+	if ft.Debug {
+		for _, a := range attempts {
+			fmt.Println(fmt.Sprintf("meta tag 'ac-discovery' not found on %s", a.Prefix), a.Error)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	if len(ep) == 0 {
+		return nil, fmt.Errorf("no endpoints discovered")
+	}
+	return ep, nil
 }

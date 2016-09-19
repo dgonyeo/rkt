@@ -17,6 +17,11 @@ package distribution
 import (
 	"fmt"
 	"net/url"
+
+	"github.com/coreos/rkt/pkg/keystore"
+	"github.com/coreos/rkt/rkt/config"
+	rktflag "github.com/coreos/rkt/rkt/flag"
+	"github.com/coreos/rkt/store/imagestore"
 )
 
 // DistType represents the Distribution type
@@ -26,6 +31,16 @@ const (
 	DistScheme = "cimd"
 )
 
+type FetchTask struct {
+	InsecureFlags *rktflag.SecFlags
+	Store         *imagestore.Store
+	KeyStore      *keystore.Keystore
+	NoCache       bool
+	Debug         bool
+	Headers       map[string]config.Headerer
+	DockerAuth    map[string]config.BasicCredentials
+}
+
 // A Distribution represent the way to retrieve an image starting from an input
 // string.
 // It's identified by an URI with a specific schema
@@ -34,6 +49,8 @@ type Distribution interface {
 	URI() *url.URL
 	// Compare compares with another Distribution
 	Compare(Distribution) bool
+	// Fetches the image into the store
+	Fetch(ft FetchTask) (string, error)
 }
 
 type newDistribution func(*url.URL) (Distribution, error)

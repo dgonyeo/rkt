@@ -172,77 +172,16 @@ func (f *Fetcher) getImageDeps(hash string) (types.Dependencies, error) {
 }
 
 func (f *Fetcher) fetchSingleImage(db *distBundle, a *asc) (string, error) {
-	distType, err := dist.Type(db.dist)
-	if err != nil {
-		return "", err
+	ft := dist.FetchTask{
+		InsecureFlags: f.InsecureFlags,
+		Store:         f.S,
+		KeyStore:      f.Ks,
+		NoCache:       f.NoCache,
+		Debug:         f.Debug,
+		Headers:       f.Headers,
+		DockerAuth:    f.DockerAuth,
 	}
-	switch distType {
-	case dist.DistTypeACIArchive:
-		return f.fetchACIArchive(db, a)
-	case dist.DistTypeAppc:
-		return f.fetchSingleImageByName(db, a)
-	case dist.DistTypeDocker:
-		return f.fetchSingleImageByDockerURL(db)
-	default:
-		return "", fmt.Errorf("unknown distribution type %d", distType)
-	}
-}
-
-func (f *Fetcher) fetchACIArchive(d *distBundle, a *asc) (string, error) {
-	u, err := dist.TransportURL(d.dist)
-	if err != nil {
-		return "", err
-	}
-
-	switch u.Scheme {
-	case "http", "https":
-		return f.fetchSingleImageByHTTPURL(u, a)
-	case "file":
-		return f.fetchSingleImageByPath(u.Path, a)
-	case "":
-		return "", fmt.Errorf("expected image URL %q to contain a scheme", u.String())
-	default:
-		return "", fmt.Errorf("an unsupported URL scheme %q - the only URL schemes supported by rkt for an archive are http, https and file", u.Scheme)
-	}
-}
-
-func (f *Fetcher) fetchSingleImageByHTTPURL(u *url.URL, a *asc) (string, error) {
-	rem, err := remoteForURL(f.S, u)
-	if err != nil {
-		return "", err
-	}
-	if h := f.maybeCheckRemoteFromStore(rem); h != "" {
-		return h, nil
-	}
-	if h, err := f.maybeFetchHTTPURLFromRemote(rem, u, a); h != "" || err != nil {
-		return h, err
-	}
-	return "", fmt.Errorf("unable to fetch image from URL %q: either image was not found in the store or store was disabled and fetching from remote yielded nothing or it was disabled", u.String())
-}
-
-func (f *Fetcher) fetchSingleImageByDockerURL(db *distBundle) (string, error) {
-	ds, err := dist.DockerString(db.dist)
-	if err != nil {
-		return "", err
-	}
-	// Convert to the docker2aci URL format
-	urlStr := "docker://" + ds
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return "", err
-	}
-
-	rem, err := remoteForURL(f.S, u)
-	if err != nil {
-		return "", err
-	}
-	if h := f.maybeCheckRemoteFromStore(rem); h != "" {
-		return h, nil
-	}
-	if h, err := f.maybeFetchDockerURLFromRemote(u); h != "" || err != nil {
-		return h, err
-	}
-	return "", fmt.Errorf("unable to fetch docker image from URL %q: either image was not found in the store or store was disabled and fetching from remote yielded nothing or it was disabled", u.String())
+	return db.dist.Fetch(ft)
 }
 
 func (f *Fetcher) maybeCheckRemoteFromStore(rem *imagestore.Remote) string {

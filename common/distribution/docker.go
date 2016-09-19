@@ -15,10 +15,19 @@
 package distribution
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/url"
+	"os"
+	"path"
+	"strings"
+	"time"
 
+	docker2aci "github.com/appc/docker2aci/lib"
 	d2acommon "github.com/appc/docker2aci/lib/common"
+	"github.com/coreos/rkt/store/imagestore"
+	"github.com/hashicorp/errwrap"
 )
 
 const (
@@ -105,4 +114,100 @@ func (d *Docker) Compare(dist Distribution) bool {
 
 func (d *Docker) dockerString() string {
 	return d.ds
+}
+
+func (d *Docker) Fetch(ft FetchTask) (string, error) {
+	u := d.URI()
+
+	dockerURL, err := d2acommon.ParseDockerURL(path.Join(u.Host, u.Path))
+	if err != nil {
+		return "", fmt.Errorf(`invalid docker URL %q; expected syntax is "docker://[REGISTRY_HOST[:REGISTRY_PORT]/]IMAGE_NAME[:TAG]"`, u)
+	}
+	latest := dockerURL.Tag == "latest"
+
+	if !ft.InsecureFlags.SkipImageCheck() {
+		return "", fmt.Errorf("signature verification for docker images is not supported (try --insecure-options=image)")
+	}
+
+	if ft.Debug {
+		fmt.Printf("fetching image from %s", u.String())
+	}
+
+	aciFile, err := d.fetch(ft, u)
+	if err != nil {
+		return "", err
+	}
+	// At this point, the ACI file is removed, but it is kept
+	// alive, because we have an fd to it opened.
+	defer aciFile.Close()
+
+	key, err := ft.Store.WriteACI(aciFile, imagestore.ACIFetchInfo{
+		Latest: latest,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// docker images don't have signature URL
+	newRem := imagestore.NewRemote(u.String(), "")
+	newRem.BlobKey = key
+	newRem.DownloadTime = time.Now()
+	err = ft.Store.WriteRemote(newRem)
+	if err != nil {
+		return "", err
+	}
+
+	return key, nil
+}
+
+func (d *Docker) fetch(ft FetchTask, u *url.URL) (*os.File, error) {
+	tmpDir, err := d.getTmpDir(ft)
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	registryURL := strings.TrimPrefix(u.String(), "docker://")
+	user, password := d.getCreds(ft, registryURL)
+	config := docker2aci.RemoteConfig{
+		Username: user,
+		Password: password,
+		Insecure: d2acommon.InsecureConfig{
+			SkipVerify: ft.InsecureFlags.SkipTLSCheck(),
+			AllowHTTP:  ft.InsecureFlags.AllowHTTP(),
+		},
+		CommonConfig: docker2aci.CommonConfig{
+			Squash:      true,
+			OutputDir:   tmpDir,
+			TmpDir:      tmpDir,
+			Compression: d2acommon.NoCompression,
+		},
+	}
+	acis, err := docker2aci.ConvertRemoteRepo(registryURL, config)
+	if err != nil {
+		return nil, errwrap.Wrap(errors.New("error converting docker image to ACI"), err)
+	}
+
+	aciFile, err := os.Open(acis[0])
+	if err != nil {
+		return nil, errwrap.Wrap(errors.New("error opening squashed ACI file"), err)
+	}
+
+	return aciFile, nil
+}
+
+func (d *Docker) getTmpDir(ft FetchTask) (string, error) {
+	storeTmpDir, err := ft.Store.TmpDir()
+	if err != nil {
+		return "", errwrap.Wrap(errors.New("error creating temporary dir for docker to ACI conversion"), err)
+	}
+	return ioutil.TempDir(storeTmpDir, "docker2aci-")
+}
+
+func (d *Docker) getCreds(ft FetchTask, registryURL string) (string, string) {
+	indexName := docker2aci.GetIndexName(registryURL)
+	if creds, ok := ft.DockerAuth[indexName]; ok {
+		return creds.User, creds.Password
+	}
+	return "", ""
 }

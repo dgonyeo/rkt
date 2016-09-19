@@ -19,10 +19,13 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	d2acommon "github.com/appc/docker2aci/lib/common"
 	"github.com/appc/spec/discovery"
 	"github.com/appc/spec/schema/types"
+	"github.com/coreos/rkt/store/imagestore"
+	"github.com/hashicorp/errwrap"
 )
 
 // AppDiscovery returns the discovery.App for an Appc distribution. It'll fail
@@ -133,4 +136,24 @@ func FullDockerString(ds string) (string, error) {
 		fds += ":" + tag
 	}
 	return fds, nil
+}
+
+func remoteForURL(s *imagestore.Store, u *url.URL) (*imagestore.Remote, error) {
+	urlStr := u.String()
+	if rem, ok, err := s.GetRemote(urlStr); err != nil {
+		return nil, errwrap.Wrap(fmt.Errorf("failed to fetch remote for URL %q", urlStr), err)
+	} else if ok {
+		return rem, nil
+	}
+	return nil, nil
+}
+
+// useCached checks if downloadTime plus maxAge is before/after the current time.
+// return true if the cached image should be used, false otherwise.
+func useCached(downloadTime time.Time, maxAge int) bool {
+	freshnessLifetime := int(time.Now().Sub(downloadTime).Seconds())
+	if maxAge > 0 && freshnessLifetime < maxAge {
+		return true
+	}
+	return false
 }
