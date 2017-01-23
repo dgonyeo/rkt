@@ -65,9 +65,22 @@ func (f *dockerFetcher) fetchImageFrom(u *url.URL, latest bool) (string, error) 
 
 	diag.Printf("fetching image from %s", u.String())
 
-	aciFile, err := f.fetch(u)
+	var currentManifestHashes []string
+	oldRem, _ := f.S.GetRemote(u.String())
+	if oldRem != nil {
+		oldMan, _ := f.S.GetImageManifest(oldRem.BlobKey)
+		oldHash, ok := oldMan.Annotations.Get(d2acommon.AppcDockerManifestHash)
+		if ok {
+			currentManifestHashes = []string{oldHash}
+		}
+	}
+
+	aciFile, err := f.fetch(u, currentManifestHashes)
 	if err != nil {
 		return "", err
+	}
+	if aciFile == nil {
+		return oldRem.BlobKey, nil
 	}
 	// At this point, the ACI file is removed, but it is kept
 	// alive, because we have an fd to it opened.
@@ -92,7 +105,7 @@ func (f *dockerFetcher) fetchImageFrom(u *url.URL, latest bool) (string, error) 
 	return key, nil
 }
 
-func (f *dockerFetcher) fetch(u *url.URL) (*os.File, error) {
+func (f *dockerFetcher) fetch(u *url.URL, currentManifestHashes []string) (*os.File, error) {
 	tmpDir, err := f.getTmpDir()
 	if err != nil {
 		return nil, err
@@ -109,15 +122,20 @@ func (f *dockerFetcher) fetch(u *url.URL) (*os.File, error) {
 			AllowHTTP:  f.InsecureFlags.AllowHTTP(),
 		},
 		CommonConfig: docker2aci.CommonConfig{
-			Squash:      true,
-			OutputDir:   tmpDir,
-			TmpDir:      tmpDir,
-			Compression: d2acommon.NoCompression,
+			Squash:                true,
+			OutputDir:             tmpDir,
+			TmpDir:                tmpDir,
+			Compression:           d2acommon.NoCompression,
+			CurrentManifestHashes: currentManifestHashes,
 		},
 	}
 	acis, err := docker2aci.ConvertRemoteRepo(registryURL, config)
 	if err != nil {
 		return nil, errwrap.Wrap(errors.New("error converting docker image to ACI"), err)
+	}
+
+	if len(acis) == 0 {
+		return nil, nil
 	}
 
 	aciFile, err := os.Open(acis[0])
